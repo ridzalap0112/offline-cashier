@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db }           from '../db.js';
+import { db } from '../db.js';
 import { LANGS, CATEGORIES, CATEGORY_KEYS } from '../i18n/index.js';
-import { useLang, useCart }   from '../hooks/useStore.js';
-import { saveTransaction }    from '../services/index.js';
-import { connectPrinter, printReceipt } from '../services/printer.js';
+import { useLang, useCart } from '../hooks/useStore.js';
+import { saveTransaction } from '../services/index.js';
+import { printReceipt } from '../services/printer.js';
+import { resolveProductImage } from '../assets/productImages.js';
 
 const fmt = (n) => 'Rp ' + Math.round(n).toLocaleString('id-ID');
 
@@ -24,110 +25,108 @@ const getCheckoutErrorMessage = (error) => {
   }
 };
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
 const S = {
-  root:     { display:'grid', gridTemplateColumns:'1fr 300px', height:'100%', overflow:'hidden' },
-  left:     { display:'flex', flexDirection:'column', overflow:'hidden' },
-  searchBar:{ padding:'10px 14px', background:'#fff', borderBottom:'0.5px solid rgba(0,0,0,0.08)', display:'flex', gap:8 },
-  input:    { flex:1, padding:'7px 12px', border:'0.5px solid rgba(0,0,0,0.14)', borderRadius:8, fontSize:13, background:'#F5F3EE', outline:'none', fontFamily:'inherit' },
-  catScroll:{ display:'flex', gap:6, overflowX:'auto', padding:'8px 14px', background:'#fff', borderBottom:'0.5px solid rgba(0,0,0,0.08)', scrollbarWidth:'none' },
-  pill:     { padding:'5px 12px', borderRadius:99, border:'0.5px solid rgba(0,0,0,0.14)', background:'transparent', fontSize:12, cursor:'pointer', color:'#6B6860', whiteSpace:'nowrap', transition:'all .14s', fontFamily:'inherit' },
-  pillA:    { background:'#1A6B45', color:'#fff', borderColor:'#1A6B45' },
-  grid:     { display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(130px,1fr))', gap:10, padding:'12px 14px', overflowY:'auto', alignContent:'start' },
-  card:     { background:'#fff', border:'0.5px solid rgba(0,0,0,0.08)', borderRadius:10, padding:12, cursor:'pointer', transition:'all .13s', position:'relative', userSelect:'none' },
-  cardHov:  { borderColor:'#1A6B45' },
-  cardLow:  { borderColor:'#F59E0B' },
-  emoji:    { fontSize:24, marginBottom:6, display:'block' },
-  name:     { fontSize:13, fontWeight:500, lineHeight:1.3, marginBottom:4 },
-  price:    { fontSize:12, fontFamily:'DM Mono,monospace', color:'#1A6B45', fontWeight:500 },
-  stockTxt: { fontSize:11, color:'#9E9C97', marginTop:3 },
-  stockWarn:{ color:'#B45309', fontWeight:500 },
-  badge:    { position:'absolute', top:7, right:7, background:'#1A6B45', color:'#fff', fontSize:10, width:18, height:18, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700, fontFamily:'DM Mono,monospace' },
-  // Cart
-  cart:     { background:'#fff', borderLeft:'0.5px solid rgba(0,0,0,0.12)', display:'flex', flexDirection:'column', overflow:'hidden' },
-  cartHead: { padding:'12px 14px 10px', borderBottom:'0.5px solid rgba(0,0,0,0.08)', display:'flex', alignItems:'center', justifyContent:'space-between' },
-  cartTitle:{ fontSize:14, fontWeight:600 },
-  countBadge:{ fontSize:11, background:'#F0EDE6', color:'#6B6860', padding:'2px 8px', borderRadius:99 },
-  cartItems:{ flex:1, overflowY:'auto' },
-  empty:    { display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', height:'100%', color:'#9E9C97', fontSize:13, gap:6 },
-  emptyBox: { width:36, height:36, border:'1.5px dashed rgba(0,0,0,0.14)', borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, marginBottom:4 },
-  ci:       { padding:'8px 14px', display:'flex', alignItems:'center', gap:10 },
-  ciInfo:   { flex:1, minWidth:0 },
-  ciName:   { fontSize:12, fontWeight:500, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' },
-  ciPrice:  { fontSize:11, color:'#9E9C97', fontFamily:'DM Mono,monospace' },
-  ciCtrl:   { display:'flex', alignItems:'center', gap:5 },
-  qBtn:     { width:22, height:22, borderRadius:6, border:'0.5px solid rgba(0,0,0,0.14)', background:'#F5F3EE', cursor:'pointer', fontSize:14, display:'flex', alignItems:'center', justifyContent:'center', color:'#1A1916', lineHeight:1, transition:'all .12s', fontFamily:'inherit' },
-  qNum:     { fontSize:13, fontWeight:600, fontFamily:'DM Mono,monospace', minWidth:18, textAlign:'center' },
-  ciSub:    { fontSize:12, fontFamily:'DM Mono,monospace', fontWeight:500, minWidth:60, textAlign:'right' },
-  footer:   { borderTop:'0.5px solid rgba(0,0,0,0.08)', padding:'10px 14px', display:'flex', flexDirection:'column', gap:7 },
-  sumRow:   { display:'flex', justifyContent:'space-between', fontSize:12, color:'#6B6860' },
-  sumTotal: { fontSize:16, fontWeight:600, color:'#1A1916', fontFamily:'DM Mono,monospace' },
-  divider:  { border:'none', borderTop:'0.5px solid rgba(0,0,0,0.08)' },
-  payGrid:  { display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:5 },
-  payBtn:   { padding:'6px 4px', border:'0.5px solid rgba(0,0,0,0.14)', borderRadius:7, background:'transparent', fontSize:11, cursor:'pointer', color:'#6B6860', transition:'all .13s', fontWeight:500, fontFamily:'inherit' },
-  payBtnA:  { background:'#E8F4EE', borderColor:'#1A6B45', color:'#0F4A30' },
-  cashRow:  { display:'flex', alignItems:'center', gap:8 },
-  cashLbl:  { fontSize:12, color:'#6B6860', whiteSpace:'nowrap' },
-  cashIn:   { flex:1, padding:'7px 10px', border:'0.5px solid rgba(0,0,0,0.14)', borderRadius:7, fontFamily:'DM Mono,monospace', fontSize:13, color:'#1A1916', background:'#F5F3EE', outline:'none' },
-  numpad:   { display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:4 },
-  npBtn:    { padding:'7px 4px', border:'0.5px solid rgba(0,0,0,0.14)', borderRadius:7, background:'#F5F3EE', fontSize:12, cursor:'pointer', color:'#1A1916', transition:'background .1s', fontFamily:'inherit' },
-  changeRow:{ display:'flex', justifyContent:'space-between', fontSize:13, fontFamily:'DM Mono,monospace' },
-  changePos:{ fontWeight:600, color:'#1A6B45' },
-  changeNeg:{ fontWeight:600, color:'#C0392B' },
-  btnRow:   { display:'flex', gap:6 },
-  clearBtn: { padding:'9px 10px', borderRadius:10, border:'0.5px solid rgba(0,0,0,0.14)', background:'transparent', fontSize:12, cursor:'pointer', color:'#6B6860', transition:'all .13s', fontFamily:'inherit' },
-  checkBtn: { flex:1, padding:'11px', borderRadius:10, border:'none', background:'#1A6B45', color:'#fff', fontSize:14, fontWeight:600, cursor:'pointer', transition:'all .14s', letterSpacing:'-0.2px', fontFamily:'inherit' },
-  checkDis: { background:'rgba(0,0,0,0.1)', color:'#9E9C97', cursor:'not-allowed' },
-  printBtn: { padding:'8px 10px', borderRadius:10, border:'0.5px solid rgba(0,0,0,0.14)', background:'transparent', fontSize:12, cursor:'pointer', color:'#1A6B45', transition:'all .13s', fontFamily:'inherit', fontWeight:500 },
-  toast:    { position:'absolute', top:8, left:'50%', transform:'translateX(-50%)', background:'#1A6B45', color:'#fff', padding:'10px 20px', borderRadius:10, fontSize:13, fontWeight:500, pointerEvents:'none', whiteSpace:'nowrap', zIndex:20, transition:'opacity .3s' },
+  root: { display: 'grid', gridTemplateColumns: '1fr 300px', height: '100%', overflow: 'hidden' },
+  left: { display: 'flex', flexDirection: 'column', overflow: 'hidden' },
+  searchBar: { padding: '10px 14px', background: '#fff', borderBottom: '0.5px solid rgba(0,0,0,0.08)', display: 'flex', gap: 8 },
+  input: { flex: 1, padding: '7px 12px', border: '0.5px solid rgba(0,0,0,0.14)', borderRadius: 8, fontSize: 13, background: '#F5F3EE', outline: 'none', fontFamily: 'inherit' },
+  catScroll: { display: 'flex', gap: 6, overflowX: 'auto', padding: '8px 14px', background: '#fff', borderBottom: '0.5px solid rgba(0,0,0,0.08)', scrollbarWidth: 'none' },
+  pill: { padding: '5px 12px', borderRadius: 99, border: '0.5px solid rgba(0,0,0,0.14)', background: 'transparent', fontSize: 12, cursor: 'pointer', color: '#6B6860', whiteSpace: 'nowrap', transition: 'all .14s', fontFamily: 'inherit' },
+  pillA: { background: '#1A6B45', color: '#fff', borderColor: '#1A6B45' },
+  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(130px,1fr))', gap: 10, padding: '12px 14px', overflowY: 'auto', alignContent: 'start' },
+  card: { background: '#fff', border: '0.5px solid rgba(0,0,0,0.08)', borderRadius: 10, padding: 12, cursor: 'pointer', transition: 'all .13s', position: 'relative', userSelect: 'none' },
+  cardLow: { borderColor: '#F59E0B' },
+  thumb: { width: 52, height: 52, borderRadius: 14, objectFit: 'cover', display: 'block', background: '#F0EDE6', border: '0.5px solid rgba(0,0,0,0.08)', marginBottom: 8 },
+  thumbSmall: { width: 34, height: 34, borderRadius: 10, objectFit: 'cover', display: 'block', background: '#F0EDE6', border: '0.5px solid rgba(0,0,0,0.08)' },
+  name: { fontSize: 13, fontWeight: 500, lineHeight: 1.3, marginBottom: 4 },
+  price: { fontSize: 12, fontFamily: 'DM Mono,monospace', color: '#1A6B45', fontWeight: 500 },
+  stockTxt: { fontSize: 11, color: '#9E9C97', marginTop: 3 },
+  stockWarn: { color: '#B45309', fontWeight: 500 },
+  badge: { position: 'absolute', top: 7, right: 7, background: '#1A6B45', color: '#fff', fontSize: 10, width: 18, height: 18, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontFamily: 'DM Mono,monospace' },
+  cart: { background: '#fff', borderLeft: '0.5px solid rgba(0,0,0,0.12)', display: 'flex', flexDirection: 'column', overflow: 'hidden' },
+  cartHead: { padding: '12px 14px 10px', borderBottom: '0.5px solid rgba(0,0,0,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
+  cartTitle: { fontSize: 14, fontWeight: 600 },
+  countBadge: { fontSize: 11, background: '#F0EDE6', color: '#6B6860', padding: '2px 8px', borderRadius: 99 },
+  cartItems: { flex: 1, overflowY: 'auto' },
+  empty: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#9E9C97', fontSize: 13, gap: 6 },
+  emptyBox: { width: 36, height: 36, border: '1.5px dashed rgba(0,0,0,0.14)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, marginBottom: 4, background: '#F5F3EE' },
+  ci: { padding: '8px 14px', display: 'flex', alignItems: 'center', gap: 10 },
+  ciInfo: { flex: 1, minWidth: 0 },
+  ciName: { fontSize: 12, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+  ciPrice: { fontSize: 11, color: '#9E9C97', fontFamily: 'DM Mono,monospace' },
+  ciCtrl: { display: 'flex', alignItems: 'center', gap: 5 },
+  qBtn: { width: 22, height: 22, borderRadius: 6, border: '0.5px solid rgba(0,0,0,0.14)', background: '#F5F3EE', cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1A1916', lineHeight: 1, transition: 'all .12s', fontFamily: 'inherit' },
+  qNum: { fontSize: 13, fontWeight: 600, fontFamily: 'DM Mono,monospace', minWidth: 18, textAlign: 'center' },
+  ciSub: { fontSize: 12, fontFamily: 'DM Mono,monospace', fontWeight: 500, minWidth: 60, textAlign: 'right' },
+  footer: { borderTop: '0.5px solid rgba(0,0,0,0.08)', padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 7 },
+  sumRow: { display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#6B6860' },
+  sumTotal: { fontSize: 16, fontWeight: 600, color: '#1A1916', fontFamily: 'DM Mono,monospace' },
+  divider: { border: 'none', borderTop: '0.5px solid rgba(0,0,0,0.08)' },
+  payGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 5 },
+  payBtn: { padding: '6px 4px', border: '0.5px solid rgba(0,0,0,0.14)', borderRadius: 7, background: 'transparent', fontSize: 11, cursor: 'pointer', color: '#6B6860', transition: 'all .13s', fontWeight: 500, fontFamily: 'inherit' },
+  payBtnA: { background: '#E8F4EE', borderColor: '#1A6B45', color: '#0F4A30' },
+  cashRow: { display: 'flex', alignItems: 'center', gap: 8 },
+  cashLbl: { fontSize: 12, color: '#6B6860', whiteSpace: 'nowrap' },
+  cashIn: { flex: 1, padding: '7px 10px', border: '0.5px solid rgba(0,0,0,0.14)', borderRadius: 7, fontFamily: 'DM Mono,monospace', fontSize: 13, color: '#1A1916', background: '#F5F3EE', outline: 'none' },
+  numpad: { display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 4 },
+  npBtn: { padding: '7px 4px', border: '0.5px solid rgba(0,0,0,0.14)', borderRadius: 7, background: '#F5F3EE', fontSize: 12, cursor: 'pointer', color: '#1A1916', transition: 'background .1s', fontFamily: 'inherit' },
+  changeRow: { display: 'flex', justifyContent: 'space-between', fontSize: 13, fontFamily: 'DM Mono,monospace' },
+  changePos: { fontWeight: 600, color: '#1A6B45' },
+  changeNeg: { fontWeight: 600, color: '#C0392B' },
+  btnRow: { display: 'flex', gap: 6 },
+  clearBtn: { padding: '9px 10px', borderRadius: 10, border: '0.5px solid rgba(0,0,0,0.14)', background: 'transparent', fontSize: 12, cursor: 'pointer', color: '#6B6860', transition: 'all .13s', fontFamily: 'inherit' },
+  checkBtn: { flex: 1, padding: '11px', borderRadius: 10, border: 'none', background: '#1A6B45', color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', transition: 'all .14s', letterSpacing: '-0.2px', fontFamily: 'inherit' },
+  checkDis: { background: 'rgba(0,0,0,0.1)', color: '#9E9C97', cursor: 'not-allowed' },
+  printBtn: { padding: '8px 10px', borderRadius: 10, border: '0.5px solid rgba(0,0,0,0.14)', background: 'transparent', fontSize: 12, cursor: 'pointer', color: '#1A6B45', transition: 'all .13s', fontFamily: 'inherit', fontWeight: 500 },
+  toast: { position: 'absolute', top: 8, left: '50%', transform: 'translateX(-50%)', background: '#1A6B45', color: '#fff', padding: '10px 20px', borderRadius: 10, fontSize: 13, fontWeight: 500, pointerEvents: 'none', whiteSpace: 'nowrap', zIndex: 20, transition: 'opacity .3s' },
 };
 
 export default function POS() {
-  const { lang }   = useLang();
-  const t          = LANGS[lang];
-  const cats       = CATEGORIES[lang];
-  const cart       = useCart();
-  const [activeCat,  setActiveCat]  = useState(0);
-  const [search,     setSearch]     = useState('');
-  const [toast,      setToast]      = useState({ msg:'', show:false });
-  const [printStatus,setPrintStatus]= useState('');
-  const [lastTx,     setLastTx]     = useState(null);
+  const { lang } = useLang();
+  const t = LANGS[lang];
+  const cats = CATEGORIES[lang];
+  const cart = useCart();
+  const [activeCat, setActiveCat] = useState(0);
+  const [search, setSearch] = useState('');
+  const [toast, setToast] = useState({ msg: '', show: false });
+  const [printStatus, setPrintStatus] = useState('');
+  const [lastTx, setLastTx] = useState(null);
 
   const products = useLiveQuery(() => db.products.orderBy('name').toArray(), []);
 
-  // Keep price map in store so getTotal() works
   useEffect(() => {
     if (!products) return;
     const map = {};
-    products.forEach((p) => { map[p.id] = p.price; });
+    products.forEach((product) => { map[product.id] = product.price; });
     cart.setPriceMap(map);
   }, [products]);
 
-  const filtered = (products || []).filter((p) => {
-    const matchSearch = p.name.toLowerCase().includes(search.toLowerCase());
-    const matchCat    = activeCat === 0 || p.category === CATEGORY_KEYS[activeCat];
+  const filtered = (products || []).filter((product) => {
+    const matchSearch = product.name.toLowerCase().includes(search.toLowerCase());
+    const matchCat = activeCat === 0 || product.category === CATEGORY_KEYS[activeCat];
     return matchSearch && matchCat;
   });
 
   const total = Object.entries(cart.items).reduce((sum, [id, qty]) => {
-    const p = (products || []).find((x) => x.id === Number(id));
-    return sum + (p ? p.price * qty : 0);
+    const product = (products || []).find((item) => item.id === Number(id));
+    return sum + (product ? product.price * qty : 0);
   }, 0);
 
-  const paid   = parseInt(cart.paidAmount) || 0;
+  const paid = parseInt(cart.paidAmount, 10) || 0;
   const change = paid - total;
-  const count  = Object.values(cart.items).reduce((s, q) => s + q, 0);
+  const count = Object.values(cart.items).reduce((sum, qty) => sum + qty, 0);
 
   const showToast = useCallback((msg) => {
     setToast({ msg, show: true });
-    setTimeout(() => setToast({ msg:'', show:false }), 2200);
+    setTimeout(() => setToast({ msg: '', show: false }), 2200);
   }, []);
 
   const handleCheckout = async () => {
     if (!products) return;
+
     const items = Object.entries(cart.items).map(([id, qty]) => {
-      const p = products.find((x) => x.id === Number(id));
-      return p ? { productId: p.id, qty } : null;
+      const product = products.find((entry) => entry.id === Number(id));
+      return product ? { productId: product.id, qty } : null;
     }).filter(Boolean);
 
     if (!items.length) {
@@ -142,11 +141,13 @@ export default function POS() {
         paymentMethod: cart.payMethod,
         cashierId: 1,
       });
+
       setLastTx({
         txId: result.txId,
         items: result.items.map((item) => ({
           productId: item.productId,
           name: item.productName,
+          image: item.image,
           qty: item.qty,
           price: item.price,
           subtotal: item.subtotal,
@@ -156,48 +157,49 @@ export default function POS() {
         change: result.change,
         paymentMethod: result.paymentMethod,
       });
+
       cart.clearCart();
       showToast(t.successMsg);
-    } catch (err) {
-      console.error(err);
-      showToast(getCheckoutErrorMessage(err));
+    } catch (error) {
+      console.error(error);
+      showToast(getCheckoutErrorMessage(error));
     }
   };
 
   const handlePrint = async () => {
     if (!lastTx) return;
     setPrintStatus(t.connecting);
+
     try {
       await printReceipt({
-        storeName:     'Warung Maju Jaya',
-        address:       'Jl. Sudirman No. 12',
-        items:         lastTx.items,
-        total:         lastTx.total,
-        paid:          lastTx.paid,
-        change:        lastTx.change,
+        storeName: 'Warung Maju Jaya',
+        address: 'Jl. Sudirman No. 12',
+        items: lastTx.items,
+        total: lastTx.total,
+        paid: lastTx.paid,
+        change: lastTx.change,
         paymentMethod: lastTx.paymentMethod,
-        txId:          lastTx.txId,
-        cashier:       'Budi',
+        txId: lastTx.txId,
+        cashier: 'Budi',
         lang,
       });
       setPrintStatus(t.printOk);
-    } catch (err) {
-      if (err.message === 'NO_BLUETOOTH') setPrintStatus(t.noBluetooth);
+    } catch (error) {
+      if (error.message === 'NO_BLUETOOTH') setPrintStatus(t.noBluetooth);
       else setPrintStatus(t.printFail);
     }
+
     setTimeout(() => setPrintStatus(''), 3000);
   };
 
-  const payKeys   = ['cash','qris','debt'];
+  const payKeys = ['cash', 'qris', 'debt'];
   const payLabels = [t.cash, t.qris, t.debt];
   const quickAmts = [5000, 10000, 20000, 50000, 100000, 200000];
 
   return (
-    <div style={{ ...S.root, position:'relative' }}>
-      {/* Toast */}
+    <div style={{ ...S.root, position: 'relative' }}>
       {toast.show && <div style={{ ...S.toast, opacity: toast.show ? 1 : 0 }}>{toast.msg}</div>}
 
-      {/* Left — products */}
       <div style={S.left}>
         <div style={S.searchBar}>
           <input
@@ -208,47 +210,48 @@ export default function POS() {
           />
         </div>
 
-        <div style={{ ...S.catScroll, WebkitOverflowScrolling:'touch' }}>
-          {cats.map((c, i) => (
+        <div style={{ ...S.catScroll, WebkitOverflowScrolling: 'touch' }}>
+          {cats.map((category, i) => (
             <button
               key={i}
               style={{ ...S.pill, ...(activeCat === i ? S.pillA : {}) }}
               onClick={() => setActiveCat(i)}
             >
-              {c}
+              {category}
             </button>
           ))}
         </div>
 
         <div style={S.grid}>
-          {filtered.map((p) => {
-            const inCart = cart.items[p.id] || 0;
-            const low    = p.stock <= (p.minStock || 5);
+          {filtered.map((product) => {
+            const inCart = cart.items[product.id] || 0;
+            const low = product.stock <= (product.minStock || 5);
+            const image = resolveProductImage(product);
             return (
               <div
-                key={p.id}
+                key={product.id}
                 style={{ ...S.card, ...(low ? S.cardLow : {}) }}
-                onClick={() => cart.addItem(p)}
-                onMouseEnter={(e) => Object.assign(e.currentTarget.style, { borderColor:'#1A6B45' })}
+                onClick={() => cart.addItem(product)}
+                onMouseEnter={(e) => Object.assign(e.currentTarget.style, { borderColor: '#1A6B45' })}
                 onMouseLeave={(e) => Object.assign(e.currentTarget.style, { borderColor: low ? '#F59E0B' : 'rgba(0,0,0,0.08)' })}
               >
                 {inCart > 0 && <div style={S.badge}>{inCart}</div>}
-                <span style={S.emoji}>{p.emoji || '📦'}</span>
-                <div style={S.name}>{p.name}</div>
-                <div style={S.price}>{fmt(p.price)}</div>
+                {image.src ? <img src={image.src} alt={product.name} style={S.thumb} /> : <div style={S.thumb} />}
+                <div style={S.name}>{product.name}</div>
+                <div style={S.price}>{fmt(product.price)}</div>
                 <div style={{ ...S.stockTxt, ...(low ? S.stockWarn : {}) }}>
-                  {t.stock}: {p.stock}{low ? ` · ${t.lowStock}` : ''}
+                  {t.stock}: {product.stock}{low ? ` · ${t.lowStock}` : ''}
                 </div>
               </div>
             );
           })}
+
           {filtered.length === 0 && (
-            <div style={{ gridColumn:'1/-1', textAlign:'center', color:'#9E9C97', padding:'2rem', fontSize:13 }}>—</div>
+            <div style={{ gridColumn: '1/-1', textAlign: 'center', color: '#9E9C97', padding: '2rem', fontSize: 13 }}>-</div>
           )}
         </div>
       </div>
 
-      {/* Right — cart */}
       <div style={S.cart}>
         <div style={S.cartHead}>
           <span style={S.cartTitle}>{t.cartTitle}</span>
@@ -258,26 +261,27 @@ export default function POS() {
         <div style={S.cartItems}>
           {count === 0 ? (
             <div style={S.empty}>
-              <div style={S.emptyBox}>🛒</div>
+              <div style={S.emptyBox}>Cart</div>
               <div>{t.emptyCart}</div>
-              <div style={{ fontSize:11, color:'#9E9C97' }}>{t.emptyHint}</div>
+              <div style={{ fontSize: 11, color: '#9E9C97' }}>{t.emptyHint}</div>
             </div>
           ) : (
             Object.entries(cart.items).map(([id, qty]) => {
-              const p = (products || []).find((x) => x.id === Number(id));
-              if (!p) return null;
-              const sub = p.price * qty;
+              const product = (products || []).find((entry) => entry.id === Number(id));
+              if (!product) return null;
+              const sub = product.price * qty;
+              const image = resolveProductImage(product);
               return (
                 <div key={id} style={S.ci}>
-                  <span style={{ fontSize:18 }}>{p.emoji || '📦'}</span>
+                  {image.src ? <img src={image.src} alt={product.name} style={S.thumbSmall} /> : <div style={S.thumbSmall} />}
                   <div style={S.ciInfo}>
-                    <div style={S.ciName}>{p.name}</div>
-                    <div style={S.ciPrice}>{fmt(p.price)} × {qty}</div>
+                    <div style={S.ciName}>{product.name}</div>
+                    <div style={S.ciPrice}>{fmt(product.price)} x {qty}</div>
                   </div>
                   <div style={S.ciCtrl}>
-                    <button style={S.qBtn} onClick={() => cart.setQty(Number(id), qty - 1, p.stock)}>−</button>
+                    <button style={S.qBtn} onClick={() => cart.setQty(Number(id), qty - 1, product.stock)}>-</button>
                     <span style={S.qNum}>{qty}</span>
-                    <button style={S.qBtn} onClick={() => cart.setQty(Number(id), qty + 1, p.stock)}>+</button>
+                    <button style={S.qBtn} onClick={() => cart.setQty(Number(id), qty + 1, product.stock)}>+</button>
                   </div>
                   <div style={S.ciSub}>{fmt(sub)}</div>
                 </div>
@@ -287,17 +291,17 @@ export default function POS() {
         </div>
 
         <div style={S.footer}>
-          <div style={S.sumRow}><span>{t.subtotal}</span><span style={{ fontFamily:'DM Mono,monospace' }}>{fmt(total)}</span></div>
+          <div style={S.sumRow}><span>{t.subtotal}</span><span style={{ fontFamily: 'DM Mono,monospace' }}>{fmt(total)}</span></div>
           <hr style={S.divider} />
           <div style={{ ...S.sumRow, ...S.sumTotal }}><span>{t.total}</span><span>{fmt(total)}</span></div>
 
-          <div style={{ fontSize:11, color:'#6B6860', fontWeight:500 }}>{t.payment}</div>
+          <div style={{ fontSize: 11, color: '#6B6860', fontWeight: 500 }}>{t.payment}</div>
           <div style={S.payGrid}>
-            {payKeys.map((k, i) => (
+            {payKeys.map((key, i) => (
               <button
-                key={k}
-                style={{ ...S.payBtn, ...(cart.payMethod === k ? S.payBtnA : {}) }}
-                onClick={() => cart.setPayMethod(k)}
+                key={key}
+                style={{ ...S.payBtn, ...(cart.payMethod === key ? S.payBtnA : {}) }}
+                onClick={() => cart.setPayMethod(key)}
               >
                 {payLabels[i]}
               </button>
@@ -317,14 +321,14 @@ export default function POS() {
                 />
               </div>
               <div style={S.numpad}>
-                {quickAmts.map((v) => (
-                  <button key={v} style={S.npBtn} onClick={() => cart.addPaid(v)}>
-                    {(v/1000).toFixed(0)}rb
+                {quickAmts.map((value) => (
+                  <button key={value} style={S.npBtn} onClick={() => cart.addPaid(value)}>
+                    {(value / 1000).toFixed(0)}rb
                   </button>
                 ))}
-                <button style={S.npBtn} onClick={() => cart.setPaidAmount(String(total))}>={fmt(total).replace('Rp ','')}</button>
-                <button style={{ ...S.npBtn, color:'#C0392B' }} onClick={() => cart.setPaidAmount('')}>C</button>
-                <button style={{ ...S.npBtn, color:'#C0392B' }} onClick={() => cart.setPaidAmount(String(Math.floor((parseInt(cart.paidAmount)||0)/10)))}>⌫</button>
+                <button style={S.npBtn} onClick={() => cart.setPaidAmount(String(total))}>={fmt(total).replace('Rp ', '')}</button>
+                <button style={{ ...S.npBtn, color: '#C0392B' }} onClick={() => cart.setPaidAmount('')}>C</button>
+                <button style={{ ...S.npBtn, color: '#C0392B' }} onClick={() => cart.setPaidAmount(String(Math.floor((parseInt(cart.paidAmount, 10) || 0) / 10)))}>⌫</button>
               </div>
               {cart.paidAmount && (
                 <div style={S.changeRow}>
@@ -335,15 +339,13 @@ export default function POS() {
             </>
           )}
 
-          {printStatus && <div style={{ fontSize:11, color:'#1A6B45', textAlign:'center' }}>{printStatus}</div>}
+          {printStatus && <div style={{ fontSize: 11, color: '#1A6B45', textAlign: 'center' }}>{printStatus}</div>}
 
           <div style={S.btnRow}>
             <button style={S.clearBtn} onClick={cart.clearCart} disabled={!count}>{t.clear}</button>
-            {lastTx && (
-              <button style={S.printBtn} onClick={handlePrint}>{t.printReceipt}</button>
-            )}
+            {lastTx && <button style={S.printBtn} onClick={handlePrint}>{t.printReceipt}</button>}
             <button
-              style={{ ...S.checkBtn, ...((!count || (cart.payMethod==='cash' && paid < total)) ? S.checkDis : {}) }}
+              style={{ ...S.checkBtn, ...((!count || (cart.payMethod === 'cash' && paid < total)) ? S.checkDis : {}) }}
               onClick={handleCheckout}
               disabled={!count || (cart.payMethod === 'cash' && paid < total)}
             >

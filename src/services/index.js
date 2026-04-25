@@ -1,4 +1,5 @@
 import { db } from '../db';
+import { getDefaultImageFile, normalizeImageFile } from '../assets/productImages.js';
 
 const PAYMENT_METHODS = new Set(['cash', 'qris', 'debt']);
 
@@ -95,7 +96,7 @@ export const saveTransaction = async ({ items, paid, paymentMethod, cashierId })
         productId,
         productName: product.name,
         barcode: product.barcode || '',
-        emoji: product.emoji || '',
+        image: normalizeImageFile(product.image) || getDefaultImageFile(product.name),
         qty,
         price,
         cost,
@@ -131,7 +132,7 @@ export const saveTransaction = async ({ items, paid, paymentMethod, cashierId })
         productId: item.productId,
         productName: item.productName,
         barcode: item.barcode,
-        emoji: item.emoji,
+        image: item.image,
         qty: item.qty,
         price: item.price,
         cost: item.cost,
@@ -199,7 +200,7 @@ export const getReportData = async (startTs, endTs) => {
     if (!itemSnapshotMap[item.productId]) {
       itemSnapshotMap[item.productId] = {
         name: item.productName,
-        emoji: item.emoji,
+        image: item.image,
       };
     }
   });
@@ -210,7 +211,7 @@ export const getReportData = async (startTs, endTs) => {
     .map(([id, qty]) => ({
       id,
       name:    itemSnapshotMap[id]?.name || prodMap[id]?.name || '?',
-      emoji:   itemSnapshotMap[id]?.emoji || prodMap[id]?.emoji || '',
+      image:   itemSnapshotMap[id]?.image || normalizeImageFile(prodMap[id]?.image) || getDefaultImageFile(prodMap[id]?.name),
       qty,
       revenue: productRev[id] || 0,
     }));

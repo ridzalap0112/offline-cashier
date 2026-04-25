@@ -6,6 +6,7 @@ import {
 import { LANGS }          from '../i18n/index.js';
 import { useLang }        from '../hooks/useStore.js';
 import { getReportData }  from '../services/index.js';
+import { getProductImageSrc } from '../assets/productImages.js';
 
 const fmt    = (n) => 'Rp ' + Math.round(n).toLocaleString('id-ID');
 const fmtShort = (n) => n >= 1_000_000 ? (n/1_000_000).toFixed(1)+'jt' : n >= 1000 ? (n/1000).toFixed(0)+'rb' : String(Math.round(n));
@@ -29,6 +30,7 @@ const S = {
   topItem:  { display:'flex', alignItems:'center', gap:10, padding:'7px 0', borderBottom:'0.5px solid rgba(0,0,0,0.06)' },
   topRank:  { fontSize:11, color:'#9E9C97', fontFamily:'DM Mono,monospace', minWidth:16 },
   topEmoji: { fontSize:20 },
+  topThumb: { width: 38, height: 38, borderRadius: 12, objectFit: 'cover', display: 'block', background: '#F0EDE6', border: '0.5px solid rgba(0,0,0,0.08)' },
   topInfo:  { flex:1 },
   topName:  { fontSize:13, fontWeight:500 },
   topSub:   { fontSize:11, color:'#9E9C97', fontFamily:'DM Mono,monospace' },
@@ -149,7 +151,11 @@ export default function Report() {
               ) : data.topProducts.map((p, i) => (
                 <div key={p.id} style={{ ...S.topItem, borderBottom: i===data.topProducts.length-1?'none':'0.5px solid rgba(0,0,0,0.06)' }}>
                   <span style={S.topRank}>{i+1}</span>
-                  <span style={S.topEmoji}>{p.emoji}</span>
+                  {getProductImageSrc(p.image) ? (
+                    <img src={getProductImageSrc(p.image)} alt={p.name} style={S.topThumb} />
+                  ) : (
+                    <div style={S.topThumb} />
+                  )}
                   <div style={S.topInfo}>
                     <div style={S.topName}>{p.name}</div>
                     <div style={S.topSub}>{p.qty} {t.qty}</div>
