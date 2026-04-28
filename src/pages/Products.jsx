@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db.js';
 import { LANGS, CATEGORY_KEYS } from '../i18n/index.js';
 import { useLang } from '../hooks/useStore.js';
 import { addProduct, updateProduct, deleteProduct } from '../services/index.js';
+import { importProductsFromRows, parseImportFile } from '../services/productImport.js';
 import {
   PRODUCT_IMAGE_OPTIONS,
   getDefaultImageFile,
@@ -17,8 +18,14 @@ const fmt = (n) => 'Rp ' + Math.round(n).toLocaleString('id-ID');
 const S = {
   root: { display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' },
   toolbar: { padding: '10px 16px', background: '#fff', borderBottom: '0.5px solid rgba(0,0,0,0.08)', display: 'flex', gap: 10, alignItems: 'center' },
+  toolbarActions: { display: 'flex', gap: 8, alignItems: 'center' },
+  downloadLink: { padding: '7px 14px', borderRadius: 8, border: '0.5px solid rgba(0,0,0,0.14)', background: '#F7F6F2', color: '#1A1916', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' },
   searchIn: { flex: 1, padding: '7px 12px', border: '0.5px solid rgba(0,0,0,0.14)', borderRadius: 8, fontSize: 13, background: '#F5F3EE', outline: 'none', fontFamily: 'inherit' },
   addBtn: { padding: '7px 16px', borderRadius: 8, border: 'none', background: '#1A6B45', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' },
+  importBtn: { padding: '7px 14px', borderRadius: 8, border: '0.5px solid rgba(0,0,0,0.14)', background: '#fff', color: '#1A1916', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' },
+  importHint: { padding: '8px 16px', fontSize: 12, color: '#6B6860', background: '#FFF9E8', borderBottom: '0.5px solid rgba(0,0,0,0.06)' },
+  importStatus: { padding: '8px 16px', fontSize: 12, color: '#0F4A30', background: '#E8F4EE', borderBottom: '0.5px solid rgba(0,0,0,0.06)' },
+  importError: { padding: '8px 16px', fontSize: 12, color: '#8B1E1E', background: '#FDECEC', borderBottom: '0.5px solid rgba(0,0,0,0.06)' },
   table: { flex: 1, overflowY: 'auto' },
   thead: { position: 'sticky', top: 0, background: '#F0EDE6', zIndex: 1 },
   th: { padding: '10px 14px', textAlign: 'left', fontSize: 11, color: '#6B6860', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.04em', whiteSpace: 'nowrap', borderBottom: '0.5px solid rgba(0,0,0,0.08)' },
@@ -64,6 +71,8 @@ export default function Products() {
   const [modal, setModal] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(EMPTY);
+  const [importState, setImportState] = useState({ type: '', message: '' });
+  const fileInputRef = useRef(null);
 
   const products = useLiveQuery(() => db.products.orderBy('name').toArray(), []);
 
@@ -116,6 +125,37 @@ export default function Products() {
     if (window.confirm('Hapus produk ini?')) await deleteProduct(id);
   };
 
+  const handleImportClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleImportFile = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setImportState({ type: '', message: '' });
+
+    try {
+      const { rows, hasCostColumn } = await parseImportFile(file);
+      const result = await importProductsFromRows(rows);
+      const baseMessage = `${result.updated} updated, ${result.created} created from ${result.total} rows.`;
+      const costNote = ' Cost data was not updated because the current file does not include a modal/cost column.';
+      setImportState({
+        type: 'success',
+        message: hasCostColumn ? baseMessage : `${baseMessage}${costNote}`,
+      });
+    } catch (error) {
+      console.error(error);
+      setImportState({
+        type: 'error',
+        message: error.message || 'Import failed. Please check the file format.',
+      });
+    }
+  };
+
   const f = (key) => (e) => setForm((state) => ({ ...state, [key]: e.target.value }));
   const previewSrc = getProductImageSrc(form.image) || getProductImageSrc(getDefaultImageFile(form.name));
 
@@ -123,8 +163,44 @@ export default function Products() {
     <div style={{ ...S.root, position: 'relative' }}>
       <div style={S.toolbar}>
         <input style={S.searchIn} placeholder={t.search} value={search} onChange={(e) => setSearch(e.target.value)} />
-        <button style={S.addBtn} onClick={openAdd}>+ {t.addProduct}</button>
+        <div style={S.toolbarActions}>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx,.xls,.csv"
+            style={{ display: 'none' }}
+            onChange={handleImportFile}
+          />
+          <button style={S.importBtn} onClick={handleImportClick}>
+            {t.importProducts}
+          </button>
+          <a
+            href="/templates/product-import-template.xlsx"
+            download="product-import-template.xlsx"
+            style={S.downloadLink}
+          >
+            Download XLSX
+          </a>
+          <a
+            href="/templates/product-import-template.csv"
+            download="product-import-template.csv"
+            style={S.downloadLink}
+          >
+            Download CSV
+          </a>
+          <button style={S.addBtn} onClick={openAdd}>+ {t.addProduct}</button>
+        </div>
       </div>
+
+      {!importState.message && (
+        <div style={S.importHint}>{t.importHint}</div>
+      )}
+      {importState.type === 'success' && (
+        <div style={S.importStatus}>{importState.message}</div>
+      )}
+      {importState.type === 'error' && (
+        <div style={S.importError}>{importState.message}</div>
+      )}
 
       <div style={S.table}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
