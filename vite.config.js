@@ -4,6 +4,18 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
   base: './',
+  build: {
+    chunkSizeWarningLimit: 600,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          charts: ['recharts'],
+          spreadsheet: ['xlsx'],
+          vendor: ['react', 'react-dom', 'dexie', 'dexie-react-hooks', 'zustand']
+        }
+      }
+    }
+  },
   plugins: [
     react(),
     VitePWA({

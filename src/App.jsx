@@ -23,7 +23,7 @@ const s = {
     height: 48,
     flexShrink: 0,
   },
-  title: { fontSize: 15, fontWeight: 600, letterSpacing: "-0.3px", flex: 1 },
+  title: { fontSize: 15, fontWeight: 600, letterSpacing: 0, flex: 1 },
   nav: {
     display: "flex",
     background: "#F0EDE6",
