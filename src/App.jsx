@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from "react";
-import { useLang } from "./hooks/useStore.js";
-import { usePage } from "./hooks/useStore.js";
+import { useLang, usePage } from "./hooks/useStore.js";
 import { LANGS } from "./i18n/index.js";
 import POS from "./pages/POS.jsx";
 import Report from "./pages/Report.jsx";
 import Products from "./pages/Products.jsx";
 import { getSyncStatus, setupOnlineSync, syncPendingChanges } from "./services/cloudSync.js";
 
-const segmentBase = "rounded-lg border-0 bg-transparent px-4 py-2.5 text-sm font-bold text-[var(--text-2)] transition hover:bg-white/50 hover:text-[var(--text)]";
-const segmentActive = "bg-white text-[var(--accent-txt)] shadow-sm ring-1 ring-[var(--border)]";
-const controlLabel = "mb-1 block text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--text-3)]";
+const segmentBase =
+  "border-b-2 border-transparent px-1 py-2 text-sm font-bold text-[var(--text-2)] transition hover:text-[var(--text)]";
+const segmentActive = "border-[var(--accent)] text-[var(--accent-txt)]";
+const controlLabel = "text-[10px] font-extrabold uppercase tracking-[0.16em] text-[var(--text-3)]";
 
 export default function App() {
   const { lang, setLang } = useLang();
@@ -26,7 +26,7 @@ export default function App() {
   const langItems = [
     { key: "id", label: "ID" },
     { key: "en", label: "EN" },
-    { key: "zh", label: "中文" },
+    { key: "zh", label: "ZH" },
   ];
 
   useEffect(() => {
@@ -54,21 +54,25 @@ export default function App() {
   const syncLabel = syncStatus?.configured
     ? syncStatus.pending > 0
       ? `Sync ${syncStatus.pending}`
-      : syncStatus.online ? "Synced" : "Offline"
+      : syncStatus.online
+        ? "Synced"
+        : "Offline"
     : "Local";
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-[var(--bg)] text-[var(--text)]">
-      <div className="flex min-h-[96px] shrink-0 items-center gap-6 border-b border-[var(--border)] bg-[rgba(255,253,248,0.94)] px-8 shadow-[var(--shadow-sm)] backdrop-blur">
-        <div className="min-w-[190px] flex-1">
+      <header className="flex min-h-[82px] shrink-0 items-center gap-8 border-b border-[var(--border)] bg-[rgba(255,253,248,0.96)] px-8 backdrop-blur">
+        <div className="min-w-[220px] flex-1">
           <div className="font-display text-2xl font-extrabold text-[var(--text)]">{t.appTitle}</div>
-          <div className="mt-1 text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--text-3)]">Retail dashboard</div>
+          <div className="mt-1 text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--text-3)]">
+            Retail dashboard
+          </div>
         </div>
 
-        <div className="flex items-end gap-4 rounded-2xl border border-[var(--border)] bg-white/70 p-3.5 shadow-[var(--shadow-sm)]">
-          <div>
+        <nav className="flex items-center gap-7">
+          <div className="flex items-center gap-4">
             <span className={controlLabel}>Page</span>
-            <div className="flex gap-1 rounded-lg bg-[var(--accent-l)] p-1">
+            <div className="flex items-center gap-4">
               {navItems.map(({ key, label }) => (
                 <button
                   key={key}
@@ -81,35 +85,49 @@ export default function App() {
             </div>
           </div>
 
-          <div>
+          <div className="h-8 w-px bg-[var(--border)]" />
+
+          <div className="flex items-center gap-4">
             <span className={controlLabel}>Language</span>
-            <div className="flex gap-1 rounded-lg bg-[var(--accent-l)] p-1">
+            <div className="flex items-center gap-3">
               {langItems.map(({ key, label }) => (
                 <button
                   key={key}
-                  className={`${segmentBase} px-4 ${lang === key ? segmentActive : ""}`}
+                  className={`${segmentBase} min-w-8 ${lang === key ? segmentActive : ""}`}
                   onClick={() => setLang(key)}
                 >
-                  {key === "zh" ? "中文" : label}
+                  {label}
                 </button>
               ))}
             </div>
           </div>
 
-          <div>
+          <div className="h-8 w-px bg-[var(--border)]" />
+
+          <div className="flex items-center gap-4">
             <span className={controlLabel}>Sync</span>
             <button
               type="button"
-              className={`flex h-[38px] min-w-[88px] items-center justify-center gap-2 rounded-md border border-[var(--border)] bg-white px-4 text-sm font-semibold text-[var(--text-2)] shadow-sm transition hover:border-[var(--border-md)] ${!syncStatus?.configured ? "text-[var(--text-3)]" : ""}`}
+              className={`flex min-w-[78px] items-center justify-center gap-2 border-b-2 border-transparent py-2 text-sm font-bold text-[var(--text-2)] transition hover:text-[var(--text)] ${
+                !syncStatus?.configured ? "text-[var(--text-3)]" : ""
+              }`}
               onClick={handleSync}
-              title={syncStatus?.configured ? (syncStatus.lastError || "Sinkronisasi cloud") : "Isi VITE_SUPABASE_URL dan VITE_SUPABASE_ANON_KEY untuk mengaktifkan Supabase sync"}
+              title={
+                syncStatus?.configured
+                  ? syncStatus.lastError || "Sinkronisasi cloud"
+                  : "Isi VITE_SUPABASE_URL dan VITE_SUPABASE_ANON_KEY untuk mengaktifkan Supabase sync"
+              }
             >
-              <span className={`h-2 w-2 rounded-full ${syncStatus?.configured ? "bg-[var(--accent)]" : "bg-[var(--text-3)]"}`} />
+              <span
+                className={`h-2 w-2 rounded-full ${
+                  syncStatus?.configured ? "bg-[var(--accent)]" : "bg-[var(--text-3)]"
+                }`}
+              />
               {syncLabel}
             </button>
           </div>
-        </div>
-      </div>
+        </nav>
+      </header>
 
       <div className="flex flex-1 flex-col overflow-hidden">
         {page === "pos" && <POS />}

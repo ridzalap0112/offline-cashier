@@ -197,31 +197,31 @@ export default function POS() {
   const quickAmts = [5000, 10000, 20000, 50000, 100000, 200000];
 
   return (
-    <div className="relative grid h-full grid-cols-[minmax(0,1fr)_420px] gap-5 overflow-hidden bg-[var(--bg)] px-6 pb-6 pt-5">
+    <div className="relative grid h-full grid-cols-[minmax(0,1fr)_390px] overflow-hidden bg-[var(--bg)]">
       {toast.show && (
         <div className="pointer-events-none absolute left-1/2 top-4 z-20 -translate-x-1/2 rounded-lg bg-[var(--accent)] px-5 py-3 text-sm font-bold text-white shadow-[var(--shadow-md)]">
           {toast.msg}
         </div>
       )}
 
-      <main className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-[rgba(255,253,248,0.48)] shadow-[var(--shadow-sm)]">
-        <div className="border-b border-[var(--border)] bg-white/60 p-4">
+      <main className="flex min-w-0 flex-col overflow-hidden bg-[rgba(255,253,248,0.42)]">
+        <div className="border-b border-[var(--border)] bg-white/50 px-6 py-4">
           <input
-            className="h-14 w-full rounded-xl border border-[var(--border-md)] bg-white px-5 text-[15px] font-semibold text-[var(--text)] outline-none transition placeholder:font-medium placeholder:text-[var(--text-3)] focus:border-[var(--accent)] focus:ring-4 focus:ring-[rgba(139,94,52,0.12)]"
+            className="h-12 w-full border-0 border-b border-[var(--border-md)] bg-transparent px-0 text-[15px] font-semibold text-[var(--text)] outline-none transition placeholder:font-medium placeholder:text-[var(--text-3)] focus:border-[var(--accent)]"
             placeholder={t.search}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
 
-        <div className="flex gap-2 overflow-x-auto border-b border-[var(--border)] bg-[rgba(255,253,248,0.78)] px-4 py-3 pos-scrollbar">
+        <div className="flex gap-5 overflow-x-auto border-b border-[var(--border)] bg-[rgba(255,253,248,0.72)] px-6 py-3 pos-scrollbar">
           {cats.map((category, i) => (
             <button
               key={i}
-              className={`whitespace-nowrap rounded-lg border px-4 py-2.5 text-sm font-bold transition ${
+              className={`whitespace-nowrap border-b-2 px-0 py-1 text-sm font-bold transition ${
                 activeCat === i
-                  ? 'border-[var(--accent)] bg-[var(--accent)] text-white shadow-[0_10px_20px_rgba(139,94,52,0.2)]'
-                  : 'border-[var(--border)] bg-white text-[var(--text-2)] hover:border-[var(--border-md)] hover:text-[var(--text)]'
+                  ? 'border-[var(--accent)] text-[var(--accent-txt)]'
+                  : 'border-transparent text-[var(--text-2)] hover:text-[var(--text)]'
               }`}
               onClick={() => setActiveCat(i)}
             >
@@ -230,7 +230,7 @@ export default function POS() {
           ))}
         </div>
 
-        <div className="grid flex-1 auto-rows-min grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-5 overflow-y-auto p-5 pos-scrollbar">
+        <div className="grid flex-1 auto-rows-min grid-cols-[repeat(auto-fill,minmax(330px,1fr))] gap-x-7 overflow-y-auto px-6 py-2 pos-scrollbar">
           {filtered.map((product) => {
             const inCart = cart.items[product.id] || 0;
             const low = product.stock <= (product.minStock || 5);
@@ -238,44 +238,48 @@ export default function POS() {
             return (
               <button
                 key={product.id}
-                className={`group relative min-h-[236px] rounded-2xl border p-5 text-left shadow-[var(--shadow-sm)] transition hover:-translate-y-0.5 hover:border-[var(--accent)] hover:shadow-[var(--shadow-md)] ${
+                className={`group relative grid min-h-[118px] grid-cols-[82px_minmax(0,1fr)] gap-4 border-b px-0 py-5 text-left transition hover:bg-white/45 ${
                   low
-                    ? 'border-[#D89745] bg-[linear-gradient(180deg,#FFFDF8_0%,#FFF4DC_100%)]'
-                    : 'border-[var(--border)] bg-[rgba(255,253,248,0.92)]'
+                    ? 'border-[#D89745]'
+                    : 'border-[var(--border)]'
                 }`}
                 onClick={() => cart.addItem(product)}
               >
                 {inCart > 0 && (
-                  <span className="absolute right-4 top-4 flex h-7 min-w-7 items-center justify-center rounded-full bg-[var(--accent)] px-2 font-mono text-xs font-bold text-white shadow-[0_10px_20px_rgba(139,94,52,0.22)]">
+                  <span className="absolute right-0 top-5 flex h-6 min-w-6 items-center justify-center rounded-full bg-[var(--accent)] px-2 font-mono text-xs font-bold text-white">
                     {inCart}
                   </span>
                 )}
-                <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-2xl border border-[var(--border)] bg-white shadow-[var(--shadow-sm)]">
+                <div className="flex h-[82px] w-[82px] items-center justify-center bg-transparent">
                   {image.src ? (
-                    <img src={image.src} alt={product.name} className="h-[68px] w-[68px] rounded-xl object-contain" />
+                    <img src={image.src} alt={product.name} className="h-[78px] w-[78px] object-contain" />
                   ) : (
-                    <div className="h-[68px] w-[68px] rounded-xl bg-[var(--surface2)]" />
+                    <div className="h-[78px] w-[78px] bg-[var(--surface2)]" />
                   )}
                 </div>
-                <div className="line-clamp-2 min-h-[44px] text-base font-extrabold leading-snug text-[var(--text)]">{product.name}</div>
-                <div className="mt-3 font-mono text-[15px] font-bold text-[var(--accent-txt)]">{fmt(product.price)}</div>
-                <div className={`mt-3 text-sm font-bold ${low ? 'text-[var(--amber)]' : 'text-[var(--text-2)]'}`}>
-                  {t.stock}: {product.stock}{low ? ` - ${t.lowStock}` : ''}
+                <div className="flex min-w-0 flex-col justify-between">
+                  <div>
+                    <div className="line-clamp-2 text-[15px] font-extrabold leading-snug text-[var(--text)]">{product.name}</div>
+                    <div className="mt-2 font-mono text-[14px] font-bold text-[var(--accent-txt)]">{fmt(product.price)}</div>
+                  </div>
+                  <div className={`mt-3 inline-flex w-fit text-xs font-bold ${low ? 'text-[var(--amber)]' : 'text-[var(--text-2)]'}`}>
+                    {t.stock}: {product.stock}{low ? ` - ${t.lowStock}` : ''}
+                  </div>
                 </div>
               </button>
             );
           })}
 
           {filtered.length === 0 && (
-            <div className="col-span-full rounded-xl border border-dashed border-[var(--border-md)] bg-white/50 p-10 text-center text-sm font-semibold text-[var(--text-3)]">
+            <div className="col-span-full p-10 text-center text-sm font-semibold text-[var(--text-3)]">
               -
             </div>
           )}
         </div>
       </main>
 
-      <aside className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-md)]">
-        <div className="flex items-center justify-between border-b border-[var(--border)] bg-[linear-gradient(135deg,#FFFDF8_0%,#F0DDC1_100%)] px-6 py-5">
+      <aside className="flex min-w-0 flex-col overflow-hidden border-l border-[var(--border)] bg-[rgba(255,253,248,0.82)]">
+        <div className="flex items-center justify-between border-b border-[var(--border)] px-5 py-4">
           <span className="font-display text-lg font-extrabold text-[var(--text)]">{t.cartTitle}</span>
           <span className="rounded-full border border-[var(--border)] bg-white px-3 py-1 text-xs font-bold text-[var(--text-2)]">{t.items(count)}</span>
         </div>
@@ -294,20 +298,20 @@ export default function POS() {
               const sub = product.price * qty;
               const image = resolveProductImage(product);
               return (
-                <div key={id} className="mb-3 grid grid-cols-[44px_minmax(0,1fr)] gap-3 rounded-xl border border-[var(--border)] bg-white p-3 shadow-[var(--shadow-sm)]">
+                <div key={id} className="grid grid-cols-[44px_minmax(0,1fr)] gap-3 border-b border-[var(--border)] py-3">
                   {image.src ? (
-                    <img src={image.src} alt={product.name} className="h-11 w-11 rounded-lg border border-[var(--border)] object-contain" />
+                    <img src={image.src} alt={product.name} className="h-11 w-11 object-contain" />
                   ) : (
-                    <div className="h-11 w-11 rounded-lg border border-[var(--border)] bg-[var(--surface2)]" />
+                    <div className="h-11 w-11 bg-[var(--surface2)]" />
                   )}
                   <div className="min-w-0">
                     <div className="truncate text-sm font-bold text-[var(--text)]">{product.name}</div>
                     <div className="mt-1 font-mono text-xs font-medium text-[var(--text-2)]">{fmt(product.price)} x {qty}</div>
                     <div className="mt-3 flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
-                        <button className="flex h-8 w-8 items-center justify-center rounded-md border border-[var(--border)] bg-white text-lg leading-none text-[var(--text)] transition hover:bg-[var(--accent-l)]" onClick={() => cart.setQty(Number(id), qty - 1, product.stock)}>-</button>
+                        <button className="flex h-8 w-8 items-center justify-center border border-[var(--border)] bg-transparent text-lg leading-none text-[var(--text)] transition hover:bg-[var(--accent-l)]" onClick={() => cart.setQty(Number(id), qty - 1, product.stock)}>-</button>
                         <span className="min-w-5 text-center font-mono text-sm font-bold">{qty}</span>
-                        <button className="flex h-8 w-8 items-center justify-center rounded-md border border-[var(--border)] bg-white text-lg leading-none text-[var(--text)] transition hover:bg-[var(--accent-l)]" onClick={() => cart.setQty(Number(id), qty + 1, product.stock)}>+</button>
+                        <button className="flex h-8 w-8 items-center justify-center border border-[var(--border)] bg-transparent text-lg leading-none text-[var(--text)] transition hover:bg-[var(--accent-l)]" onClick={() => cart.setQty(Number(id), qty + 1, product.stock)}>+</button>
                       </div>
                       <div className="font-mono text-sm font-bold text-[var(--text)]">{fmt(sub)}</div>
                     </div>
@@ -318,20 +322,20 @@ export default function POS() {
           )}
         </div>
 
-        <div className="border-t border-[var(--border)] bg-white px-6 py-5">
+        <div className="border-t border-[var(--border)] bg-white/70 px-5 py-4">
           <div className="flex justify-between text-sm font-semibold text-[var(--text-2)]"><span>{t.subtotal}</span><span className="font-mono">{fmt(total)}</span></div>
           <div className="my-3 h-px bg-[var(--border)]" />
           <div className="flex justify-between text-lg font-extrabold text-[var(--text)]"><span>{t.total}</span><span className="font-mono">{fmt(total)}</span></div>
 
-          <div className="mt-5 text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--text-3)]">{t.payment}</div>
+          <div className="mt-4 text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--text-3)]">{t.payment}</div>
           <div className="mt-2 grid grid-cols-3 gap-2">
             {payKeys.map((key, i) => (
               <button
                 key={key}
-                className={`rounded-lg border px-2 py-3 text-sm font-bold transition ${
+                className={`border-b-2 px-2 py-2 text-sm font-bold transition ${
                   cart.payMethod === key
-                    ? 'border-[var(--accent)] bg-[var(--accent-l)] text-[var(--accent-txt)]'
-                    : 'border-[var(--border)] bg-white text-[var(--text-2)] hover:border-[var(--border-md)]'
+                    ? 'border-[var(--accent)] text-[var(--accent-txt)]'
+                    : 'border-transparent text-[var(--text-2)] hover:text-[var(--text)]'
                 }`}
                 onClick={() => cart.setPayMethod(key)}
               >
@@ -346,7 +350,7 @@ export default function POS() {
                 <span className="whitespace-nowrap text-sm font-semibold text-[var(--text-2)]">{t.paid}</span>
                 <input
                   type="number"
-                  className="h-12 min-w-0 flex-1 rounded-lg border border-[var(--border)] bg-white px-3 font-mono text-sm text-[var(--text)] outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-[rgba(139,94,52,0.12)]"
+                  className="h-10 min-w-0 flex-1 border-0 border-b border-[var(--border)] bg-transparent px-1 font-mono text-sm text-[var(--text)] outline-none focus:border-[var(--accent)]"
                   placeholder="0"
                   value={cart.paidAmount}
                   onChange={(e) => cart.setPaidAmount(e.target.value)}
@@ -354,13 +358,13 @@ export default function POS() {
               </div>
               <div className="mt-3 grid grid-cols-3 gap-2">
                 {quickAmts.map((value) => (
-                  <button key={value} className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2 py-3 text-sm font-bold text-[var(--text)] transition hover:bg-[var(--accent-l)]" onClick={() => cart.addPaid(value)}>
+                  <button key={value} className="border border-[var(--border)] bg-white/60 px-2 py-2 text-sm font-bold text-[var(--text)] transition hover:bg-[var(--accent-l)]" onClick={() => cart.addPaid(value)}>
                     {(value / 1000).toFixed(0)}rb
                   </button>
                 ))}
-                <button className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2 py-3 text-sm font-bold text-[var(--text)] transition hover:bg-[var(--accent-l)]" onClick={() => cart.setPaidAmount(String(total))}>={fmt(total).replace('Rp ', '')}</button>
-                <button className="rounded-lg border border-[var(--border)] bg-white px-2 py-3 text-sm font-bold text-[var(--danger)] transition hover:bg-[var(--danger-l)]" onClick={() => cart.setPaidAmount('')}>C</button>
-                <button className="rounded-lg border border-[var(--border)] bg-white px-2 py-3 text-sm font-bold text-[var(--danger)] transition hover:bg-[var(--danger-l)]" onClick={() => cart.setPaidAmount(String(Math.floor((parseInt(cart.paidAmount, 10) || 0) / 10)))}>Del</button>
+                <button className="border border-[var(--border)] bg-white/60 px-2 py-2 text-sm font-bold text-[var(--text)] transition hover:bg-[var(--accent-l)]" onClick={() => cart.setPaidAmount(String(total))}>={fmt(total).replace('Rp ', '')}</button>
+                <button className="border border-[var(--border)] bg-white/60 px-2 py-2 text-sm font-bold text-[var(--danger)] transition hover:bg-[var(--danger-l)]" onClick={() => cart.setPaidAmount('')}>C</button>
+                <button className="border border-[var(--border)] bg-white/60 px-2 py-2 text-sm font-bold text-[var(--danger)] transition hover:bg-[var(--danger-l)]" onClick={() => cart.setPaidAmount(String(Math.floor((parseInt(cart.paidAmount, 10) || 0) / 10)))}>Del</button>
               </div>
               {cart.paidAmount && (
                 <div className="mt-3 flex justify-between font-mono text-sm">
@@ -374,10 +378,10 @@ export default function POS() {
           {printStatus && <div className="mt-3 text-center text-xs font-bold text-[var(--accent-txt)]">{printStatus}</div>}
 
           <div className="mt-4 flex gap-2">
-            <button className="rounded-lg border border-[var(--border)] bg-white px-4 py-3.5 text-sm font-bold text-[var(--text-2)] transition hover:bg-[var(--surface)] disabled:cursor-not-allowed disabled:opacity-50" onClick={cart.clearCart} disabled={!count}>{t.clear}</button>
-            {lastTx && <button className="rounded-lg border border-[var(--accent)] bg-white px-4 py-3.5 text-sm font-bold text-[var(--accent-txt)] transition hover:bg-[var(--accent-l)]" onClick={handlePrint}>{t.printReceipt}</button>}
+            <button className="border border-[var(--border)] bg-transparent px-4 py-3 text-sm font-bold text-[var(--text-2)] transition hover:bg-white/70 disabled:cursor-not-allowed disabled:opacity-50" onClick={cart.clearCart} disabled={!count}>{t.clear}</button>
+            {lastTx && <button className="border border-[var(--accent)] bg-transparent px-4 py-3 text-sm font-bold text-[var(--accent-txt)] transition hover:bg-[var(--accent-l)]" onClick={handlePrint}>{t.printReceipt}</button>}
             <button
-              className="flex-1 rounded-lg bg-[var(--accent)] px-4 py-3.5 text-sm font-extrabold text-white shadow-[0_14px_24px_rgba(139,94,52,0.24)] transition hover:bg-[var(--accent-txt)] disabled:cursor-not-allowed disabled:bg-[var(--surface2)] disabled:text-[var(--text-3)] disabled:shadow-none"
+              className="flex-1 bg-[var(--accent)] px-4 py-3 text-sm font-extrabold text-white transition hover:bg-[var(--accent-txt)] disabled:cursor-not-allowed disabled:bg-[var(--surface2)] disabled:text-[var(--text-3)]"
               onClick={handleCheckout}
               disabled={!count || (cart.payMethod === 'cash' && paid < total)}
             >
