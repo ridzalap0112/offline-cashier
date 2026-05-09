@@ -1,3 +1,5 @@
+import qz from 'qz-tray';
+
 /**
  * Thermal printer service via Web Bluetooth API.
  *
@@ -105,6 +107,39 @@ const concat = (...arrays) => {
   return result;
 };
 
+const bytesToBinaryString = (bytes) => {
+  let result = '';
+  for (let i = 0; i < bytes.length; i += 1) {
+    result += String.fromCharCode(bytes[i]);
+  }
+  return result;
+};
+
+export const isQzTrayAvailable = () => Boolean(qz?.websocket);
+
+export const printReceiptViaQzTray = async (receiptData) => {
+  if (!isQzTrayAvailable()) throw new Error('QZ_NOT_AVAILABLE');
+
+  const printerName = localStorage.getItem('kasir_qz_printer') || '';
+  if (!qz.websocket.isActive()) {
+    await qz.websocket.connect();
+  }
+
+  const targetPrinter = printerName || await qz.printers.getDefault();
+  const config = qz.configs.create(targetPrinter, {
+    encoding: 'ISO-8859-1',
+    copies: 1,
+  });
+
+  const bytes = buildReceipt(receiptData);
+  await qz.print(config, [{
+    type: 'raw',
+    format: 'command',
+    flavor: 'plain',
+    data: bytesToBinaryString(bytes),
+  }]);
+};
+
 // ─── Build receipt bytes ──────────────────────────────────────────────────────
 export const buildReceipt = ({ storeName, address, items, total, paid, change, paymentMethod, txId, cashier, lang = 'id' }) => {
   const fmt = (n) => 'Rp ' + Math.round(n).toLocaleString('id-ID');
@@ -161,6 +196,15 @@ export const buildReceipt = ({ storeName, address, items, total, paid, change, p
 
 // ─── Main print function ──────────────────────────────────────────────────────
 export const printReceipt = async (receiptData) => {
+  try {
+    await printReceiptViaQzTray(receiptData);
+    return;
+  } catch (error) {
+    if (!['QZ_NOT_AVAILABLE', 'Unable to establish connection with QZ'].some((message) => String(error?.message || error).includes(message))) {
+      throw error;
+    }
+  }
+
   const char  = _char || await connectPrinter();
   const bytes = buildReceipt(receiptData);
   await writeChunked(char, bytes);

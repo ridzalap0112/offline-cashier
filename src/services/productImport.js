@@ -1,6 +1,7 @@
 import * as XLSX from 'xlsx';
 import { db } from '../db.js';
 import { getDefaultImageFile, normalizeImageFile } from '../assets/productImages.js';
+import { enqueueSync } from './cloudSync.js';
 
 const normalizeKey = (value) =>
   String(value || '')
@@ -78,7 +79,7 @@ export const importProductsFromRows = async (rows) => {
     throw new Error('Tidak ada data produk yang bisa diimpor.');
   }
 
-  return db.transaction('rw', db.products, async () => {
+  return db.transaction('rw', db.products, db.syncQueue, async () => {
     const existingProducts = await db.products.toArray();
     const byBarcode = new Map(
       existingProducts
@@ -123,16 +124,20 @@ export const importProductsFromRows = async (rows) => {
       else payload.minStock = 5;
 
       if (existing) {
-        await db.products.update(existing.id, payload);
+        const updatedAt = Date.now();
+        await db.products.update(existing.id, { ...payload, updatedAt });
         const merged = { ...existing, ...payload };
+        await enqueueSync({ tableName: 'products', recordId: existing.id, operation: 'upsert', payload: { ...merged, updatedAt } });
         byName.delete(normalizeName(existing.name));
         if (existing.barcode) byBarcode.delete(existing.barcode);
         if (merged.barcode) byBarcode.set(merged.barcode, merged);
         byName.set(normalizeName(merged.name), merged);
         updated += 1;
       } else {
-        const id = await db.products.add({ ...payload, createdAt: Date.now() });
-        const createdProduct = { id, ...payload };
+        const now = Date.now();
+        const id = await db.products.add({ ...payload, createdAt: now, updatedAt: now });
+        const createdProduct = { id, ...payload, createdAt: now, updatedAt: now };
+        await enqueueSync({ tableName: 'products', recordId: id, operation: 'upsert', payload: createdProduct });
         if (createdProduct.barcode) byBarcode.set(createdProduct.barcode, createdProduct);
         byName.set(normalizeName(createdProduct.name), createdProduct);
         created += 1;

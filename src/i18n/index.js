@@ -1,6 +1,6 @@
 export const LANGS = {
   id: {
-    appTitle: 'Kasir Warung',
+    appTitle: 'Ridzal POS',
     pos: 'Kasir',
     report: 'Laporan',
     products: 'Produk',
@@ -59,7 +59,7 @@ export const LANGS = {
     barcode: 'Barcode',
   },
   en: {
-    appTitle: 'Warung POS',
+    appTitle: 'Ridzal POS',
     pos: 'POS',
     report: 'Reports',
     products: 'Products',
@@ -118,7 +118,7 @@ export const LANGS = {
     barcode: 'Barcode',
   },
   zh: {
-    appTitle: '收银台',
+    appTitle: 'Ridzal POS',
     pos: '收银',
     report: '报表',
     products: '商品',

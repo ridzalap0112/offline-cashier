@@ -16,41 +16,41 @@ import {
 const fmt = (n) => 'Rp ' + Math.round(n).toLocaleString('id-ID');
 
 const S = {
-  root: { display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' },
-  toolbar: { padding: '10px 16px', background: '#fff', borderBottom: '0.5px solid rgba(0,0,0,0.08)', display: 'flex', gap: 10, alignItems: 'center' },
+  root: { display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', background: 'var(--bg)', padding: 24, gap: 14 },
+  toolbar: { padding: 14, background: 'linear-gradient(135deg,#FFFFFF 0%,#F8FAFC 100%)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', display: 'flex', gap: 12, alignItems: 'center', boxShadow: 'var(--shadow-sm)' },
   toolbarActions: { display: 'flex', gap: 8, alignItems: 'center' },
-  downloadLink: { padding: '7px 14px', borderRadius: 8, border: '0.5px solid rgba(0,0,0,0.14)', background: '#F7F6F2', color: '#1A1916', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' },
-  searchIn: { flex: 1, padding: '7px 12px', border: '0.5px solid rgba(0,0,0,0.14)', borderRadius: 8, fontSize: 13, background: '#F5F3EE', outline: 'none', fontFamily: 'inherit' },
-  addBtn: { padding: '7px 16px', borderRadius: 8, border: 'none', background: '#1A6B45', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' },
-  importBtn: { padding: '7px 14px', borderRadius: 8, border: '0.5px solid rgba(0,0,0,0.14)', background: '#fff', color: '#1A1916', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' },
-  importHint: { padding: '8px 16px', fontSize: 12, color: '#6B6860', background: '#FFF9E8', borderBottom: '0.5px solid rgba(0,0,0,0.06)' },
-  importStatus: { padding: '8px 16px', fontSize: 12, color: '#0F4A30', background: '#E8F4EE', borderBottom: '0.5px solid rgba(0,0,0,0.06)' },
-  importError: { padding: '8px 16px', fontSize: 12, color: '#8B1E1E', background: '#FDECEC', borderBottom: '0.5px solid rgba(0,0,0,0.06)' },
-  table: { flex: 1, overflowY: 'auto' },
-  thead: { position: 'sticky', top: 0, background: '#F0EDE6', zIndex: 1 },
-  th: { padding: '10px 14px', textAlign: 'left', fontSize: 11, color: '#6B6860', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.04em', whiteSpace: 'nowrap', borderBottom: '0.5px solid rgba(0,0,0,0.08)' },
-  tr: { borderBottom: '0.5px solid rgba(0,0,0,0.06)', transition: 'background .1s' },
-  td: { padding: '10px 14px', fontSize: 13, color: '#1A1916' },
-  mono: { fontFamily: 'DM Mono,monospace', fontSize: 12 },
-  low: { color: '#B45309', fontWeight: 500 },
-  actBtn: { padding: '4px 10px', borderRadius: 6, border: '0.5px solid rgba(0,0,0,0.14)', background: 'transparent', fontSize: 11, cursor: 'pointer', color: '#6B6860', marginRight: 4, transition: 'all .12s', fontFamily: 'inherit' },
-  delBtn: { padding: '4px 10px', borderRadius: 6, border: '0.5px solid rgba(0,0,0,0.14)', background: 'transparent', fontSize: 11, cursor: 'pointer', color: '#C0392B', transition: 'all .12s', fontFamily: 'inherit' },
-  overlay: { position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 30 },
-  modal: { background: '#fff', borderRadius: 16, padding: '22px 24px', width: '100%', maxWidth: 420, display: 'flex', flexDirection: 'column', gap: 14 },
-  modalT: { fontSize: 16, fontWeight: 600 },
-  label: { fontSize: 12, color: '#6B6860', marginBottom: 4, display: 'block' },
-  mInput: { width: '100%', padding: '8px 12px', border: '0.5px solid rgba(0,0,0,0.18)', borderRadius: 8, fontSize: 13, fontFamily: 'inherit', outline: 'none' },
-  mSelect: { width: '100%', padding: '8px 12px', border: '0.5px solid rgba(0,0,0,0.18)', borderRadius: 8, fontSize: 13, fontFamily: 'inherit', outline: 'none', background: '#fff' },
+  downloadLink: { padding: '10px 14px', borderRadius: 8, border: '1px solid var(--border-md)', background: '#fff', color: 'var(--text-2)', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' },
+  searchIn: { flex: 1, padding: '11px 14px', border: '1px solid var(--border-md)', borderRadius: 8, fontSize: 14, background: '#fff', outline: 'none', fontFamily: 'inherit', color: 'var(--text)' },
+  addBtn: { padding: '10px 16px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,var(--accent) 0%,#0E7490 100%)', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', boxShadow: '0 10px 22px rgba(15,118,110,0.18)' },
+  importBtn: { padding: '10px 14px', borderRadius: 8, border: '1px solid var(--border-md)', background: '#fff', color: 'var(--text-2)', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' },
+  importHint: { padding: '10px 14px', fontSize: 13, color: 'var(--text-2)', background: '#fff', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', boxShadow: 'var(--shadow-sm)' },
+  importStatus: { padding: '10px 14px', fontSize: 13, color: 'var(--accent-txt)', background: 'var(--accent-l)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)' },
+  importError: { padding: '10px 14px', fontSize: 13, color: 'var(--rose)', background: 'var(--rose-l)', border: '1px solid #FECDD3', borderRadius: 'var(--r-lg)' },
+  table: { flex: 1, overflowY: 'auto', background: '#fff', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', boxShadow: 'var(--shadow-sm)' },
+  thead: { position: 'sticky', top: 0, background: 'var(--surface2)', zIndex: 1 },
+  th: { padding: '12px 14px', textAlign: 'left', fontSize: 11, color: 'var(--text-2)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.04em', whiteSpace: 'nowrap', borderBottom: '1px solid var(--border)' },
+  tr: { borderBottom: '1px solid var(--border)', transition: 'background .1s' },
+  td: { padding: '12px 14px', fontSize: 13, color: 'var(--text)' },
+  mono: { fontFamily: 'var(--mono)', fontSize: 12 },
+  low: { color: 'var(--amber)', fontWeight: 700 },
+  actBtn: { padding: '6px 10px', borderRadius: 7, border: '1px solid var(--border-md)', background: '#fff', fontSize: 12, cursor: 'pointer', color: 'var(--text-2)', marginRight: 4, transition: 'all .12s', fontFamily: 'inherit', fontWeight: 600 },
+  delBtn: { padding: '6px 10px', borderRadius: 7, border: '1px solid #FECDD3', background: 'var(--rose-l)', fontSize: 12, cursor: 'pointer', color: 'var(--rose)', transition: 'all .12s', fontFamily: 'inherit', fontWeight: 600 },
+  overlay: { position: 'absolute', inset: 0, background: 'rgba(15,23,42,0.28)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 30 },
+  modal: { background: 'linear-gradient(180deg,#FFFFFF 0%,#FCFCFD 100%)', borderRadius: 18, border: '1px solid var(--border)', padding: '22px 24px', width: '100%', maxWidth: 440, display: 'flex', flexDirection: 'column', gap: 14, boxShadow: 'var(--shadow-md)' },
+  modalT: { fontSize: 18, fontWeight: 700, color: 'var(--text)' },
+  label: { fontSize: 12, color: 'var(--text-2)', marginBottom: 5, display: 'block', fontWeight: 600 },
+  mInput: { width: '100%', padding: '10px 12px', border: '1px solid var(--border-md)', borderRadius: 8, fontSize: 13, fontFamily: 'inherit', outline: 'none', color: 'var(--text)', background: '#fff' },
+  mSelect: { width: '100%', padding: '10px 12px', border: '1px solid var(--border-md)', borderRadius: 8, fontSize: 13, fontFamily: 'inherit', outline: 'none', background: '#fff', color: 'var(--text)' },
   mRow: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 },
   mBtns: { display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 },
-  cancelBtn: { padding: '9px 18px', borderRadius: 8, border: '0.5px solid rgba(0,0,0,0.14)', background: 'transparent', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' },
-  saveBtn: { padding: '9px 18px', borderRadius: 8, border: 'none', background: '#1A6B45', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' },
+  cancelBtn: { padding: '10px 18px', borderRadius: 8, border: '1px solid var(--border-md)', background: '#fff', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', color: 'var(--text-2)', fontWeight: 600 },
+  saveBtn: { padding: '10px 18px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,var(--accent) 0%,#0E7490 100%)', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 10px 22px rgba(15,118,110,0.18)' },
   imageCell: { width: 48 },
   thumb: { width: 36, height: 36, borderRadius: 10, objectFit: 'cover', display: 'block', background: '#F0EDE6', border: '0.5px solid rgba(0,0,0,0.08)' },
-  thumbLg: { width: 84, height: 84, borderRadius: 14, objectFit: 'cover', display: 'block', background: '#F0EDE6', border: '0.5px solid rgba(0,0,0,0.08)' },
+  thumbLg: { width: 84, height: 84, borderRadius: 14, objectFit: 'cover', display: 'block', background: 'var(--surface2)', border: '1px solid var(--border)' },
   imagePreviewWrap: { display: 'flex', alignItems: 'center', gap: 14 },
   previewMeta: { display: 'flex', flexDirection: 'column', gap: 4 },
-  previewName: { fontSize: 12, color: '#6B6860' },
+  previewName: { fontSize: 12, color: 'var(--text-2)' },
 };
 
 const EMPTY = {
@@ -222,7 +222,7 @@ export default function Products() {
                   </td>
                   <td style={S.td}>
                     <div style={{ fontWeight: 500 }}>{product.name}</div>
-                    <div style={{ fontSize: 11, color: '#9E9C97', fontFamily: 'DM Mono,monospace' }}>{product.barcode}</div>
+                    <div style={{ fontSize: 11, color: '#9E9C97', fontFamily: 'var(--mono)' }}>{product.barcode}</div>
                   </td>
                   <td style={S.td}><span style={{ fontSize: 11, background: '#F0EDE6', color: '#6B6860', padding: '2px 8px', borderRadius: 99 }}>{product.category}</span></td>
                   <td style={{ ...S.td, ...S.mono }}>{fmt(product.price)}</td>

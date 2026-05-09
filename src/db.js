@@ -86,6 +86,14 @@ db.version(4)
     });
   });
 
+db.version(5).stores({
+  products: '++id, name, &barcode, category, stock',
+  transactions: '++id, createdAt, cashierId, status, paymentMethod',
+  transactionItems: '++id, transactionId, productId',
+  cashiers: '++id, name, role',
+  syncQueue: '++id, tableName, recordId, operation, createdAt, status',
+});
+
 db.on('populate', async () => {
   await db.cashiers.bulkAdd([
     { name: 'Budi', pin: '1234', role: 'cashier' },

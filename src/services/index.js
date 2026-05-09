@@ -1,5 +1,6 @@
 import { db } from '../db';
 import { getDefaultImageFile, normalizeImageFile } from '../assets/productImages.js';
+import { enqueueSync } from './cloudSync.js';
 
 const PAYMENT_METHODS = new Set(['cash', 'qris', 'debt']);
 
@@ -23,12 +24,25 @@ const toPositiveInt = (value) => {
 };
 
 // ─── Product services ─────────────────────────────────────────────────────────
-export const addProduct = (data) =>
-  db.products.add({ ...data, stock: data.stock ?? 0, createdAt: Date.now() });
+export const addProduct = async (data) => {
+  const product = { ...data, stock: data.stock ?? 0, createdAt: Date.now(), updatedAt: Date.now() };
+  const id = await db.products.add(product);
+  await enqueueSync({ tableName: 'products', recordId: id, operation: 'upsert', payload: { ...product, id } });
+  return id;
+};
 
-export const updateProduct = (id, data) => db.products.update(id, data);
+export const updateProduct = async (id, data) => {
+  const updatedAt = Date.now();
+  await db.products.update(id, { ...data, updatedAt });
+  const product = await db.products.get(id);
+  await enqueueSync({ tableName: 'products', recordId: id, operation: 'upsert', payload: product });
+};
 
-export const deleteProduct = (id) => db.products.delete(id);
+export const deleteProduct = async (id) => {
+  const product = await db.products.get(id);
+  await db.products.delete(id);
+  await enqueueSync({ tableName: 'products', recordId: id, operation: 'delete', payload: product || { id } });
+};
 
 export const findByBarcode = (barcode) =>
   db.products.where('barcode').equals(barcode).first();
@@ -39,7 +53,7 @@ export const findByBarcode = (barcode) =>
  * Reduces stock for each item in the same Dexie transaction.
  */
 export const saveTransaction = async ({ items, paid, paymentMethod, cashierId }) => {
-  return await db.transaction('rw', db.transactions, db.transactionItems, db.products, async () => {
+  return await db.transaction('rw', db.transactions, db.transactionItems, db.products, db.syncQueue, async () => {
     if (!Array.isArray(items) || items.length === 0) {
       throw makeError('EMPTY_CART', 'Keranjang masih kosong.');
     }
@@ -116,7 +130,7 @@ export const saveTransaction = async ({ items, paid, paymentMethod, cashierId })
 
     const change = paymentMethod === 'cash' ? normalizedPaid - total : 0;
 
-    const txId = await db.transactions.add({
+    const transaction = {
       createdAt: Date.now(),
       total,
       paid: normalizedPaid,
@@ -124,10 +138,11 @@ export const saveTransaction = async ({ items, paid, paymentMethod, cashierId })
       paymentMethod,
       cashierId: cashierIdInt,
       status: 'done',
-    });
+    };
 
-    await db.transactionItems.bulkAdd(
-      resolvedItems.map((item) => ({
+    const txId = await db.transactions.add(transaction);
+
+    const transactionItems = resolvedItems.map((item) => ({
         transactionId: txId,
         productId: item.productId,
         productName: item.productName,
@@ -137,14 +152,29 @@ export const saveTransaction = async ({ items, paid, paymentMethod, cashierId })
         price: item.price,
         cost: item.cost,
         subtotal: item.subtotal,
-      }))
-    );
+      }));
+
+    const itemIds = await db.transactionItems.bulkAdd(transactionItems, { allKeys: true });
 
     for (const item of resolvedItems) {
       await db.products.update(item.productId, {
         stock: productMap.get(item.productId).stock - item.qty,
       });
     }
+
+    await enqueueSync({
+      tableName: 'transactions',
+      recordId: txId,
+      operation: 'upsert',
+      payload: { ...transaction, id: txId },
+    });
+
+    await Promise.all(transactionItems.map((item, index) => enqueueSync({
+      tableName: 'transactionItems',
+      recordId: itemIds[index],
+      operation: 'upsert',
+      payload: { ...item, id: itemIds[index] },
+    })));
 
     return {
       txId,

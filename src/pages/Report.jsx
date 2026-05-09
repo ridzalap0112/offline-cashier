@@ -6,35 +6,37 @@ import {
 import { LANGS }          from '../i18n/index.js';
 import { useLang }        from '../hooks/useStore.js';
 import { getReportData }  from '../services/index.js';
+import { exportReportPdf, shareReportToWhatsApp } from '../services/reportExport.js';
 import { getProductImageSrc } from '../assets/productImages.js';
 
 const fmt    = (n) => 'Rp ' + Math.round(n).toLocaleString('id-ID');
 const fmtShort = (n) => n >= 1_000_000 ? (n/1_000_000).toFixed(1)+'jt' : n >= 1000 ? (n/1000).toFixed(0)+'rb' : String(Math.round(n));
 
-const COLORS = ['#1A6B45','#378ADD','#B45309','#993556'];
+const COLORS = ['#0F766E','#4F46E5','#B45309','#BE123C'];
 
 const S = {
-  root:     { padding:'20px 24px', overflowY:'auto', height:'100%', display:'flex', flexDirection:'column', gap:20 },
-  toolbar:  { display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' },
-  pageTitle:{ fontSize:18, fontWeight:600, letterSpacing:'-0.4px', flex:1 },
-  rangeBtn: { padding:'6px 14px', border:'0.5px solid rgba(0,0,0,0.14)', borderRadius:99, background:'transparent', fontSize:12, cursor:'pointer', color:'#6B6860', fontWeight:500, transition:'all .13s', fontFamily:'inherit' },
-  rangeBtnA:{ background:'#1A6B45', color:'#fff', borderColor:'#1A6B45' },
-  metrics:  { display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(160px,1fr))', gap:10 },
-  metric:   { background:'#F0EDE6', borderRadius:10, padding:'14px 16px' },
-  mLabel:   { fontSize:12, color:'#6B6860', marginBottom:6 },
-  mVal:     { fontSize:22, fontWeight:600, letterSpacing:'-0.5px', fontFamily:'DM Mono,monospace', color:'#1A1916' },
-  mSub:     { fontSize:11, color:'#9E9C97', marginTop:3 },
+  root:     { padding:'24px', overflowY:'auto', height:'100%', display:'flex', flexDirection:'column', gap:20, background:'var(--bg)' },
+  toolbar:  { display:'flex', alignItems:'center', gap:10, flexWrap:'wrap', background:'linear-gradient(135deg,#FFFFFF 0%,#F8FAFC 100%)', border:'1px solid var(--border)', borderRadius:'var(--r-lg)', padding:'14px 16px', boxShadow:'var(--shadow-sm)' },
+  pageTitle:{ fontSize:20, fontWeight:800, letterSpacing:0, flex:1, color:'var(--text)' },
+  rangeBtn: { padding:'8px 14px', border:'1px solid var(--border-md)', borderRadius:8, background:'#fff', fontSize:13, cursor:'pointer', color:'var(--text-2)', fontWeight:600, transition:'all .13s', fontFamily:'inherit' },
+  rangeBtnA:{ background:'var(--accent)', color:'#fff', borderColor:'var(--accent)', boxShadow:'0 8px 18px rgba(15,118,110,0.18)' },
+  actionBtn:{ padding:'8px 13px', border:'1px solid var(--border-md)', borderRadius:8, background:'#fff', fontSize:13, cursor:'pointer', color:'var(--text-2)', fontWeight:600, fontFamily:'inherit' },
+  actionBtnDisabled:{ opacity:0.45, cursor:'not-allowed' },
+  metrics:  { display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(170px,1fr))', gap:14 },
+  metric:   { background:'linear-gradient(180deg,#FFFFFF 0%,#FCFCFD 100%)', border:'1px solid var(--border)', borderRadius:'var(--r-lg)', padding:'18px 20px', boxShadow:'var(--shadow-sm)' },
+  mLabel:   { fontSize:12, color:'var(--text-2)', marginBottom:6, fontWeight:600 },
+  mVal:     { fontSize:23, fontWeight:700, letterSpacing:0, fontFamily:'var(--mono)', color:'var(--text)' },
+  mSub:     { fontSize:11, color:'var(--text-3)', marginTop:3 },
   row2:     { display:'grid', gridTemplateColumns:'2fr 1fr', gap:16, minHeight:0 },
-  card:     { background:'#fff', border:'0.5px solid rgba(0,0,0,0.08)', borderRadius:12, padding:'16px 18px' },
-  cardTitle:{ fontSize:13, fontWeight:600, marginBottom:14, color:'#1A1916' },
+  card:     { background:'#fff', border:'1px solid var(--border)', borderRadius:'var(--r-lg)', padding:'18px 20px', boxShadow:'var(--shadow-sm)' },
+  cardTitle:{ fontSize:14, fontWeight:700, marginBottom:14, color:'var(--text)' },
   topItem:  { display:'flex', alignItems:'center', gap:10, padding:'7px 0', borderBottom:'0.5px solid rgba(0,0,0,0.06)' },
-  topRank:  { fontSize:11, color:'#9E9C97', fontFamily:'DM Mono,monospace', minWidth:16 },
-  topEmoji: { fontSize:20 },
-  topThumb: { width: 38, height: 38, borderRadius: 12, objectFit: 'cover', display: 'block', background: '#F0EDE6', border: '0.5px solid rgba(0,0,0,0.08)' },
+  topRank:  { fontSize:11, color:'var(--text-3)', fontFamily:'var(--mono)', minWidth:16 },
+  topThumb: { width: 40, height: 40, borderRadius: 10, objectFit: 'cover', display: 'block', background: 'var(--surface2)', border: '1px solid var(--border)' },
   topInfo:  { flex:1 },
   topName:  { fontSize:13, fontWeight:500 },
-  topSub:   { fontSize:11, color:'#9E9C97', fontFamily:'DM Mono,monospace' },
-  topRev:   { fontSize:12, fontFamily:'DM Mono,monospace', fontWeight:500, color:'#1A6B45' },
+  topSub:   { fontSize:11, color:'var(--text-3)', fontFamily:'var(--mono)' },
+  topRev:   { fontSize:12, fontFamily:'var(--mono)', fontWeight:700, color:'var(--accent-txt)' },
   noData:   { textAlign:'center', color:'#9E9C97', padding:'3rem 0', fontSize:13 },
 };
 
@@ -60,6 +62,7 @@ export default function Report() {
   const [range, setRange] = useState('today');
   const [data, setData]   = useState(null);
   const [loading, setLoading] = useState(true);
+  const hasData = Boolean(data && data.txCount > 0);
 
   useEffect(() => {
     setLoading(true);
@@ -92,10 +95,26 @@ export default function Report() {
             {t[r]}
           </button>
         ))}
+        <button
+          type="button"
+          style={{ ...S.actionBtn, ...(!hasData ? S.actionBtnDisabled : {}) }}
+          disabled={!hasData}
+          onClick={() => exportReportPdf({ data, range, t })}
+        >
+          PDF
+        </button>
+        <button
+          type="button"
+          style={{ ...S.actionBtn, ...(!hasData ? S.actionBtnDisabled : {}) }}
+          disabled={!hasData}
+          onClick={() => shareReportToWhatsApp({ data, range, t })}
+        >
+          WhatsApp
+        </button>
       </div>
 
       {loading ? (
-        <div style={S.noData}>…</div>
+        <div style={S.noData}>Loading...</div>
       ) : !data || data.txCount === 0 ? (
         <div style={S.noData}>{t.noData}</div>
       ) : (
@@ -124,18 +143,18 @@ export default function Report() {
                 <AreaChart data={chartData} margin={{ top:4, right:4, left:0, bottom:0 }}>
                   <defs>
                     <linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%"  stopColor="#1A6B45" stopOpacity={0.18} />
-                      <stop offset="95%" stopColor="#1A6B45" stopOpacity={0} />
+                      <stop offset="5%"  stopColor="#0F766E" stopOpacity={0.2} />
+                      <stop offset="95%" stopColor="#0F766E" stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
-                  <XAxis dataKey="date" tick={{ fontSize:11, fill:'#9E9C97' }} axisLine={false} tickLine={false} />
-                  <YAxis tickFormatter={fmtShort} tick={{ fontSize:11, fill:'#9E9C97' }} axisLine={false} tickLine={false} width={48} />
+                  <XAxis dataKey="date" tick={{ fontSize:11, fill:'#98A2B3' }} axisLine={false} tickLine={false} />
+                  <YAxis tickFormatter={fmtShort} tick={{ fontSize:11, fill:'#98A2B3' }} axisLine={false} tickLine={false} width={48} />
                   <Tooltip
                     formatter={(v) => [fmt(v), t.totalSales]}
-                    contentStyle={{ fontSize:12, borderRadius:8, border:'0.5px solid rgba(0,0,0,0.12)', fontFamily:'DM Mono,monospace' }}
+                    contentStyle={{ fontSize:12, borderRadius:10, border:'1px solid var(--border)', boxShadow:'var(--shadow-sm)', fontFamily:'var(--mono)' }}
                   />
-                  <Area type="monotone" dataKey="sales" stroke="#1A6B45" strokeWidth={2} fill="url(#sg)" dot={false} activeDot={{ r:4 }} />
+                  <Area type="monotone" dataKey="sales" stroke="#0F766E" strokeWidth={2.5} fill="url(#sg)" dot={false} activeDot={{ r:4, fill:'#0F766E' }} />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -176,7 +195,7 @@ export default function Report() {
                     <Pie data={pieData} cx="50%" cy="45%" outerRadius={70} dataKey="value" label={({ name, percent }) => `${name} ${(percent*100).toFixed(0)}%`} labelLine={false} fontSize={11}>
                       {pieData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                     </Pie>
-                    <Tooltip formatter={(v) => fmt(v)} contentStyle={{ fontSize:12, borderRadius:8, border:'0.5px solid rgba(0,0,0,0.12)' }} />
+                    <Tooltip formatter={(v) => fmt(v)} contentStyle={{ fontSize:12, borderRadius:10, border:'1px solid var(--border)', boxShadow:'var(--shadow-sm)' }} />
                   </PieChart>
                 </ResponsiveContainer>
               )}

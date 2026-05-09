@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
@@ -17,17 +18,22 @@ export default defineConfig({
     }
   },
   plugins: [
+    tailwindcss(),
     react(),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico'],
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,webmanifest,csv,xlsx}'],
+      },
       manifest: {
-        name: 'Offline Cashier',
-        short_name: 'Cashier',
-        description: 'Aplikasi kasir digital offline-first untuk warung',
-        theme_color: '#ffffff',
-        background_color: '#ffffff',
-        display: 'standalone'
+        name: 'Ridzal POS',
+        short_name: 'Ridzal POS',
+        description: 'Aplikasi kasir digital offline-first untuk toko ritel',
+        theme_color: '#8B5E34',
+        background_color: '#F7F0E6',
+        display: 'standalone',
+        lang: 'id'
       }
     })
   ]
